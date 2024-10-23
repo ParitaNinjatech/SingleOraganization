@@ -1,26 +1,35 @@
 OrdererOrgs:
-  - Name: Org
-    Domain: bionic.com
-    EnableNodeOUs: false
+  # ---------------------------------------------------------------------------
+  # Orderer
+  # ---------------------------------------------------------------------------
+  - Name: Orderer
+    Domain: example.com
+    EnableNodeOUs: true
 
+    # ---------------------------------------------------------------------------
+    # "Specs" - Define only one orderer
+    # ---------------------------------------------------------------------------
     Specs:
       - Hostname: orderer
+        SANS:
+          - "localhost"
+          - "127.0.0.1"
+
+# ---------------------------------------------------------------------------
+# "PeerOrgs" - Definition of organizations managing peer nodes
+# ---------------------------------------------------------------------------
 PeerOrgs:
+  # ---------------------------------------------------------------------------
+  # Org1 - Single organization with minimum peers
+  # ---------------------------------------------------------------------------
   - Name: Org1
-    Domain: org1.bionic.com
-    EnableNodeOUs: false
+    Domain: org1.example.com
+    EnableNodeOUs: true
+
     Template:
-      Count: 2
-      # Start: 5
-      # Hostname: {{.Prefix}}{{.Index}} # default
+      Count: 1 # Only one peer
+      SANS:
+        - "localhost"
+
     Users:
-      Count: 1
-  - Name: Org2
-    Domain: org2.bionic.com
-    EnableNodeOUs: false
-    Template:
-      Count: 2
-      # Start: 5
-      # Hostname: {{.Prefix}}{{.Index}} # default
-    Users:
-      Count: 1
+      Count: 1 # Minimum number of users
