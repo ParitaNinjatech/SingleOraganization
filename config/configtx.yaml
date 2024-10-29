@@ -1,0 +1,207 @@
+# ---------------------------------------------------------
+# Developer Guide for configtx.yaml
+# ---------------------------------------------------------
+# 
+# Purpose:
+# The `configtx.yaml` file is a core configuration file used in Hyperledger Fabric for defining the channel,
+# orderer, organizations, policies, and capabilities of the blockchain network. It serves as the blueprint
+# for generating channel artifacts, such as the genesis block and configuration transactions, which are essential
+# for establishing and managing a Fabric network.
+#
+# Need:
+# This file is required to define the structure of the blockchain network, including the roles of each organization
+# (such as peer and orderer organizations), the consensus mechanism (e.g., Raft), the policies governing the
+# interactions between the organizations, and the capabilities that determine the features available for the channel,
+# orderers, and applications.
+#
+# How to Use:
+# - Modify the `configtx.yaml` file to reflect the structure and policies of your network.
+# - This file is referenced by the `configtxgen` tool to generate the genesis block and channel configuration.
+# - You must customize the organizations, policies, and other parameters based on your network setup.
+# - After customization, use the `configtxgen` tool to create the genesis block and channel creation transaction.
+#
+# How It Solves the Problem:
+# The `configtx.yaml` file standardizes the configuration of a Fabric network by offering a structured way to define
+# each organization's role, the orderer consensus mechanism, and the policies for transaction validation, block
+# creation, and access control. This file helps avoid manual misconfigurations and ensures that the same configuration
+# can be consistently applied across multiple environments.
+#
+# Components Used:
+# 1. **Organizations**: Defines both peer and orderer organizations, their MSP directories, and policies for
+#    reading, writing, and administering the blockchain.
+# 2. **Policies**: Defines rules for who can perform various actions, such as reading, writing, and administering
+#    the blockchain (Admins, Readers, Writers).
+# 3. **Capabilities**: Controls the features available to channels, orderers, and applications. This ensures backward
+#    compatibility and enables advanced features.
+# 4. **Orderer Configuration**: Specifies the orderer type (e.g., Raft), consensus parameters, and batch settings for
+#    how transactions are grouped into blocks.
+# 5. **Anchor Peers**: Defines the peer nodes that will serve as the communication hubs for cross-organization
+#    interactions.
+# 6. **Profiles**: Specifies the profiles for different network configurations, such as the genesis block creation
+#    (OrdererGenesis) and a basic channel configuration (BasicChannel).
+#
+# Example Workflow:
+# 1. Customize `Organizations`, `Policies`, and `Orderer` configurations.
+# 2. Run `configtxgen` to generate the genesis block using the `OrdererGenesis` profile.
+# 3. Create a new channel configuration using the `BasicChannel` profile.
+#
+# This file is vital for orchestrating the overall network structure and policy management within a Hyperledger
+# Fabric network.
+#
+# ---------------------------------------------------------
+
+
+Organizations:
+    # Define the orderer organization configuration
+    - &OrdererOrg  # Create an anchor named "OrdererOrg"
+        Name: OrdererOrg  # Human-readable name of the organization
+        ID: OrdererMSP  # Membership Service Provider (MSP) ID for the orderer organization
+        MSPDir: crypto-config/ordererOrganizations/example.com/msp  # Path to the MSP directory for cryptographic materials
+        Policies:  # Define access control policies for the organization
+            Readers:
+                Type: Signature  # Policy type based on digital signatures
+                Rule: "OR('OrdererMSP.member')"  # Allows any member of OrdererMSP to read
+            Writers:
+                Type: Signature
+                Rule: "OR('OrdererMSP.member')"  # Allows any member of OrdererMSP to write
+            Admins:
+                Type: Signature
+                Rule: "OR('OrdererMSP.admin')"  # Allows only admin members of OrdererMSP to administer
+
+    # Define a peer organization (Org1) configuration
+    - &Org1  # Create an anchor named "Org1"
+        Name: Org1MSP  # Human-readable name of the peer organization
+        ID: Org1MSP  # MSP ID for the peer organization
+        MSPDir: crypto-config/peerOrganizations/org1.example.com/msp  # Path to the MSP directory for Org1
+        Policies:  # Define access control policies for Org1
+            Readers:
+                Type: Signature
+                Rule: "OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')"  # Allows admins, peers, and clients to read
+            Writers:
+                Type: Signature
+                Rule: "OR('Org1MSP.admin', 'Org1MSP.client')"  # Allows admins and clients to write
+            Admins:
+                Type: Signature
+                Rule: "OR('Org1MSP.admin')"  # Only admins can administer
+            Endorsement:
+                Type: Signature
+                Rule: "OR('Org1MSP.peer')"  # Only peers can endorse transactions
+
+        # Define the anchor peer for Org1, which serves as the communication point in the network
+        AnchorPeers:
+            - Host: peer0.org1.example.com  # Hostname of the anchor peer for Org1
+              Port: 7051  # Port on which the anchor peer listens
+
+Capabilities:  # Define various capabilities for different components (channel, orderer, application)
+    Channel: &ChannelCapabilities  # Capabilities related to the channel
+        V2_0: true  # Enable version 2.0 features for channels
+    Orderer: &OrdererCapabilities  # Capabilities related to the orderer
+        V2_0: true  # Enable version 2.0 features for orderers
+    Application: &ApplicationCapabilities  # Capabilities related to the application (smart contracts, chaincode, etc.)
+        V2_0: true  # Enable version 2.0 features for applications
+
+Application: &ApplicationDefaults  # Default configuration for the application section
+    ACLs: &ACLsDefault  # Access Control Lists (ACLs) for various chaincode lifecycle and query functions
+        _lifecycle/CommitChaincodeDefinition: /Channel/Application/Writers  # Who can commit chaincode definitions
+        _lifecycle/QueryChaincodeDefinition: /Channel/Application/Readers  # Who can query chaincode definitions
+        _lifecycle/QueryNamespaceDefinitions: /Channel/Application/Readers  # Who can query namespace definitions
+        qscc/GetChainInfo: /Channel/Application/Readers  # Who can get chain info
+        qscc/GetBlockByNumber: /Channel/Application/Readers  # Who can get blocks by number
+        qscc/GetBlockByHash: /Channel/Application/Readers  # Who can get blocks by hash
+        qscc/GetTransactionByID: /Channel/Application/Readers  # Who can get transactions by ID
+        qscc/GetBlockByTxID: /Channel/Application/Readers  # Who can get blocks by transaction ID
+        cscc/GetConfigBlock: /Channel/Application/Readers  # Who can get the configuration block
+        cscc/GetConfigTree: /Channel/Application/Readers  # Who can get the configuration tree
+        peer/Propose: /Channel/Application/Writers  # Who can propose changes
+        peer/ChaincodeToChaincode: /Channel/Application/Readers  # Who can invoke chaincode-to-chaincode transactions
+        event/Block: /Channel/Application/Readers  # Who can receive block events
+        event/FilteredBlock: /Channel/Application/Readers  # Who can receive filtered block events
+
+    Policies:  # Default policies for application-level access control
+        Readers:
+            Type: ImplicitMeta  # Policy type based on implicit metadata
+            Rule: "ANY Readers"  # Allows any Reader to have read access
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"  # Allows any Writer to have write access
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"  # Requires a majority of Admins for administrative actions
+        LifecycleEndorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"  # Requires a majority for endorsement actions in lifecycle
+        Endorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"  # Requires a majority for endorsement of transactions
+
+    Capabilities:  # Include application-level capabilities
+        <<: *ApplicationCapabilities  # Inherit from the ApplicationCapabilities defined earlier
+
+Orderer: &OrdererDefaults  # Default settings for the orderer
+    OrdererType: etcdraft  # Use the etcd/raft consensus mechanism for the orderer
+    EtcdRaft:  # Raft-specific configuration for the orderer
+        Consenters:  # List of nodes participating in the consensus
+        - Host: orderer.example.com  # Hostname of the orderer node
+          Port: 7050  # Port on which the orderer listens
+          ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt  # Client TLS certificate
+          ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt  # Server TLS certificate
+    Addresses:  # Addresses of the orderer nodes
+        - orderer.example.com:7050
+    BatchTimeout: 2s  # Timeout duration for creating a block
+    BatchSize:  # Configure the batch size for blocks
+        MaxMessageCount: 10  # Maximum number of messages in a block
+        AbsoluteMaxBytes: 99 MB  # Maximum size of a block
+        PreferredMaxBytes: 512 KB  # Preferred size of a block
+    Policies:  # Define policies for orderer
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"  # Any reader can read from the orderer
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"  # Any writer can write to the orderer
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"  # A majority of admins are required for administrative actions
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"  # Any writer can validate blocks
+
+Channel: &ChannelDefaults  # Default settings for channels
+    Policies:  # Define access control policies for the channel
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"  # Any reader can read from the channel
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"  # Any writer can write to the channel
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"  # A majority of admins are required for channel administration
+    Capabilities:
+        <<: *ChannelCapabilities  # Include channel-level capabilities from the earlier definition
+
+Profiles:  # Define profiles for network configuration
+    BasicChannel:  # Profile for a basic channel configuration
+        Consortium: SampleConsortium  # Specify the consortium for this channel
+        <<: *ChannelDefaults  # Include default channel settings
+        Application:  # Application-specific settings for the channel
+            <<: *ApplicationDefaults  # Use the default application settings
+            Organizations:  # Organizations in this channel
+                - *Org1  # Include Org1 in the channel
+            Capabilities:
+                <<: *ApplicationCapabilities  # Enable application capabilities
+
+    OrdererGenesis:  # Profile for generating the genesis block for the orderer
+        <<: *ChannelDefaults  # Include default channel settings
+        Capabilities:
+            <<: *ChannelCapabilities  # Enable channel-level capabilities
+        Orderer:  # Define the orderer settings
+            <<: *OrdererDefaults  # Use the default orderer settings
+            Organizations:  # Organizations involved in the orderer
+                - *OrdererOrg  # Include OrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities  # Enable orderer-level capabilities
+        Consortiums:  # Define the consortiums in the network
+            SampleConsortium:  # Name of the consortium
+                Organizations:  # Organizations part of the consortium
+                    - *Org1  # Include Org1

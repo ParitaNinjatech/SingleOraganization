@@ -1,0 +1,77 @@
+# core.yaml
+peer:
+  # General logging level
+  logging:
+    level: info
+
+  # Peer configuration
+  id: peer0.org1.example.com
+  mspID: Org1MSP
+  address: peer0.org1.example.com:7051
+  listenAddress: 0.0.0.0:7051
+  chaincodeAddress: peer0.org1.example.com:7052
+  chaincodeListenAddress: 0.0.0.0:7052
+  gossip:
+    useLeaderElection: true
+    maxRetries: 3
+    maxPropagationDelay: 2s
+
+  # Endorsement policy
+  endorsement:
+    policy: "OR('Org1MSP.peer')"
+
+  # Ledger state configuration
+  state:
+    stateDatabase: couchdb
+    couchDBConfig:
+      couchDBAddress: couchdb0:5984
+      username: admin
+      password: adminpw
+
+  # TLS configuration
+  tls:
+    enabled: true
+    cert:
+      file: /etc/hyperledger/crypto/peer/tls/server.crt
+    key:
+      file: /etc/hyperledger/crypto/peer/tls/server.key
+    rootCert:
+      file: /etc/hyperledger/crypto/peer/tls/ca.crt
+
+  # Configuration for the lifecycle
+  lifecycle:
+    enabled: true
+    query:
+      timeout: 10s
+  
+  BCCSP:
+    Default: SW
+    SW:
+      Hash: SHA2
+      Security: 256
+      FileKeyStore:
+        KeyStore: /etc/hyperledger/fabric/msp/keystore
+
+orderer:
+  # Orderer configuration
+  id: orderer.example.com
+  mspID: OrdererMSP
+  listenAddress: 0.0.0.0:7050
+  gossip:
+    useLeaderElection: true
+    maxRetries: 3
+    maxPropagationDelay: 2s
+
+  # TLS configuration for orderer
+  tls:
+    enabled: true
+    cert:
+      file: /var/hyperledger/orderer/tls/server.crt
+    key:
+      file: /var/hyperledger/orderer/tls/server.key
+    rootCert:
+      file: /var/hyperledger/orderer/tls/ca.crt
+
+  # Genesis file location
+  general:
+    genesisFile: /var/hyperledger/orderer/genesis.block

@@ -1,0 +1,75 @@
+OrdererOrgs:
+  # ---------------------------------------------------------------------------
+  # Orderer
+  # ---------------------------------------------------------------------------
+  - Name: Orderer
+    # "Name" defines the name of the orderer organization. This is the central
+    # node responsible for ordering transactions in the blockchain.
+    
+    Domain: example.com
+    # "Domain" specifies the domain name associated with this orderer organization.
+    # This will be used to generate the cryptographic materials (certificates, keys).
+    
+    EnableNodeOUs: true
+    # "EnableNodeOUs" is a flag that enables Organizational Units (OUs). OUs help in
+    # assigning different roles (e.g., admin, client, peer) to identities within the organization.
+
+    # ---------------------------------------------------------------------------
+    # "Specs" - Define only one orderer
+    # ---------------------------------------------------------------------------
+    Specs:
+      # "Specs" defines the specific details about the orderer nodes.
+      # In this case, only one orderer node is defined.
+      
+      - Hostname: orderer
+        # "Hostname" is the name assigned to the orderer node.
+        # This name will be used to generate certificates and keys for this orderer.
+
+        SANS:
+          # "SANS" stands for Subject Alternative Names. It defines alternative 
+          # domain names or IPs that the node will respond to, used in TLS certificates.
+          - "localhost"
+          # "localhost" is included as a SAN, allowing the orderer to be accessed locally.
+
+          - "127.0.0.1"
+          # "127.0.0.1" is the loopback IP address for localhost, also added as a SAN for local access.
+
+# ---------------------------------------------------------------------------
+# "PeerOrgs" - Definition of organizations managing peer nodes
+# ---------------------------------------------------------------------------
+PeerOrgs:
+  # ---------------------------------------------------------------------------
+  # Org1 - Single organization with minimum peers
+  # ---------------------------------------------------------------------------
+  - Name: Org1
+    # "Name" defines the name of the peer organization.
+    # This organization is responsible for managing peer nodes that validate transactions.
+    
+    Domain: org1.example.com
+    # "Domain" specifies the domain name associated with this peer organization.
+    # This domain will be used for cryptographic material generation.
+
+    EnableNodeOUs: true
+    # "EnableNodeOUs" enables Organizational Units (OUs), allowing for role assignment
+    # such as peers, admins, clients, etc., within this peer organization.
+
+    Template:
+      # "Template" is used to define multiple peer nodes in a repetitive structure.
+      # In this case, we are specifying details for one peer node.
+
+      Count: 1
+      # "Count" indicates how many peer nodes will be created for this organization.
+      # In this case, only one peer node will be created.
+      
+      SANS:
+        # Similar to the orderer, Subject Alternative Names (SANS) are defined for the peer node.
+        - "localhost"
+        # "localhost" is added as a SAN, allowing the peer to be accessed locally.
+
+    Users:
+      # "Users" defines the number of user identities that will be created for the organization.
+      # These identities could represent admins, clients, etc.
+
+      Count: 1
+      # "Count" indicates that only one user identity will be generated for this organization.
+      # This is the minimum requirement, typically representing an admin or a client.
